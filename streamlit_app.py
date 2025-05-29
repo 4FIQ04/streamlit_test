@@ -4,7 +4,7 @@ import requests
 # Font selection
 font_options = {
     "Sans Serif": "Arial, Harlow Solid Italic",
-    "Serif": "Georgia, serif",
+    "Serif": "Georgia, Harlow Solid Italic",
     "Monospace": "Courier New, monospace"
 }
 selected_font = st.selectbox("Choose your preferred font style:", list(font_options.keys()))
