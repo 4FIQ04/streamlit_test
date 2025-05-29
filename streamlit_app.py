@@ -3,7 +3,7 @@ import requests
 
 # Font selection
 font_options = {
-    "Sans Serif": "Arial, sans-serif",
+    "Sans Serif": "Arial, Harlow Solid Italic",
     "Serif": "Georgia, serif",
     "Monospace": "Courier New, monospace"
 }
