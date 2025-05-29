@@ -1,23 +1,38 @@
 import streamlit as st
 import requests
 
-# Custom CSS for colorful background (no blue)
-st.markdown("""
+# Font selection
+font_options = {
+    "Sans Serif": "Arial, sans-serif",
+    "Serif": "Georgia, serif",
+    "Monospace": "Courier New, monospace"
+}
+selected_font = st.selectbox("Choose your preferred font style:", list(font_options.keys()))
+font_family = font_options[selected_font]
+
+# Custom CSS with selected font and colorful background
+st.markdown(f"""
     <style>
-        body {
+        body {{
             background: linear-gradient(to right, #ffe0b2, #ffccbc);
-            color: #000000;
-        }
-        .stApp {
+            font-family: {font_family};
+        }}
+        .stApp {{
             background: linear-gradient(to right, #fceabb, #f8b500);
             padding: 20px;
             border-radius: 10px;
-        }
-        .title {
+        }}
+        .title {{
             font-size: 36px;
             font-weight: bold;
             color: #4e342e;
-        }
+            font-family: {font_family};
+        }}
+        .username {{
+            font-weight: bold;
+            font-size: 20px;
+            color: #5d4037;
+        }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -26,7 +41,7 @@ st.markdown('<div class="title">💸 MYR Currency Exchange</div>', unsafe_allow_
 
 # User name input
 user_name = st.text_input("What's your name?", "Guest")
-st.write(f"👋 Welcome, **{user_name}**! Hope you're having a fantastic day!")
+st.markdown(f'<div class="username">👋 Welcome, <strong>{user_name}</strong>! Hope you\'re having a fantastic day!</div>', unsafe_allow_html=True)
 
 # Custom message input
 user_message = st.text_input('Enter a custom message:', 'Hello, Streamlit!')
