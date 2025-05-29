@@ -1,22 +1,22 @@
 import streamlit as st
 import requests
 
-# Custom CSS for colorful background and text styling
+# Custom CSS for colorful background (no blue)
 st.markdown("""
     <style>
         body {
-            background: linear-gradient(to right, #ffecd2, #fcb69f);
+            background: linear-gradient(to right, #ffe0b2, #ffccbc);
             color: #000000;
         }
         .stApp {
-            background: linear-gradient(to right, #89f7fe, #66a6ff);
+            background: linear-gradient(to right, #fceabb, #f8b500);
             padding: 20px;
             border-radius: 10px;
         }
         .title {
             font-size: 36px;
             font-weight: bold;
-            color: #222222;
+            color: #4e342e;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -26,7 +26,7 @@ st.markdown('<div class="title">💸 MYR Currency Exchange</div>', unsafe_allow_
 
 # User name input
 user_name = st.text_input("What's your name?", "Guest")
-st.write(f"👋 Welcome, **{user_name}**! Hope you're having a great day!")
+st.write(f"👋 Welcome, **{user_name}**! Hope you're having a fantastic day!")
 
 # Custom message input
 user_message = st.text_input('Enter a custom message:', 'Hello, Streamlit!')
