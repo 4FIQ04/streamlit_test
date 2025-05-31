@@ -30,13 +30,13 @@ user_name = st.text_input("Your Name:", "Guest")
 st.markdown(f"👋 Hello, **{user_name}**! Let's check the weather.")
 
 city = st.text_input("Enter a city name:", "Kuala Lumpur")
-api_key = st.text_input("Enter your OpenWeatherMap API Key:", type="password")
+api_key = st.text_input("Enter your WeatherAPI Key:", type="password")
 
-# ========== Weather Data Fetch Function ==========
+# ========== WeatherAPI Data Fetch Function ==========
 @st.cache_data
-def get_weather_data(city_name, key):
+def get_weatherapi_data(city_name, key):
     try:
-        url = f"http://api.openweathermap.org/data/2.5/forecast?q={city_name}&units=metric&appid={key}"
+        url = f"http://api.weatherapi.com/v1/forecast.json?key={key}&q={city_name}&days=5&aqi=no&alerts=no"
         response = requests.get(url)
         response.raise_for_status()
         return response.json()
@@ -46,26 +46,30 @@ def get_weather_data(city_name, key):
 # ========== API Call and Display ==========
 if st.button("Get Forecast"):
     if not api_key or api_key.lower() == "password":
-        st.warning("⚠️ Please enter a **valid** OpenWeatherMap API Key (not 'password').")
+        st.warning("⚠️ Please enter a **valid** WeatherAPI Key (not 'password').")
     else:
-        data = get_weather_data(city, api_key)
+        data = get_weatherapi_data(city, api_key)
 
         if "error" in data:
             st.error(f"API Error: {data['error']}")
-        elif data.get("cod") != "200":
-            st.error("❌ City not found or the API returned an error.")
+        elif "location" not in data or "forecast" not in data:
+            st.error("❌ City not found or API response incomplete.")
         else:
-            st.success(f"✅ Showing 5-day forecast for **{data['city']['name']}**, {data['city']['country']}")
+            location = data["location"]
+            st.success(f"✅ Showing 5-day forecast for **{location['name']}**, {location['country']}")
 
             # Parse forecast data
+            forecast_days = data["forecast"]["forecastday"]
             forecast_data = []
-            for item in data['list']:
-                forecast_data.append({
-                    "datetime": item["dt_txt"],
-                    "temperature": item["main"]["temp"],
-                    "humidity": item["main"]["humidity"],
-                    "condition": item["weather"][0]["description"].title()
-                })
+
+            for day in forecast_days:
+                for hour in day["hour"]:
+                    forecast_data.append({
+                        "datetime": hour["time"],
+                        "temperature": hour["temp_c"],
+                        "humidity": hour["humidity"],
+                        "condition": hour["condition"]["text"]
+                    })
 
             df = pd.DataFrame(forecast_data)
             df["datetime"] = pd.to_datetime(df["datetime"])
@@ -92,4 +96,5 @@ if st.button("Get Forecast"):
             # ========== Forecast Table ==========
             with st.expander("🔍 Show forecast table"):
                 st.dataframe(df)
+
 
