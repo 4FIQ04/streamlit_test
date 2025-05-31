@@ -2,99 +2,79 @@ import streamlit as st
 import requests
 import pandas as pd
 import altair as alt
-from datetime import datetime
 
-# ========== Streamlit UI Setup ==========
-st.set_page_config(page_title="Weather Forecast Dashboard", layout="centered")
+# ===== Page Configuration =====
+st.set_page_config(page_title="🎥 Movie Explorer", layout="centered")
 
-st.markdown("""
-    <style>
-    .title {
-        font-size: 36px;
-        font-weight: bold;
-        color: #1565c0;
-        padding-bottom: 10px;
-    }
-    .subtitle {
-        font-size: 20px;
-        color: #424242;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# ===== Title and Instructions =====
+st.title("🎬 Movie Explorer App")
+st.markdown("Search for a movie and explore its ratings, genre, and more!")
 
-st.markdown('<div class="title">🌤️ Weather Forecast Dashboard</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Check the latest weather trends by city</div>', unsafe_allow_html=True)
+# ===== User Inputs =====
+api_key = st.text_input("Enter your OMDb API key:", type="password")
+movie_title = st.text_input("Enter a movie title:", "Inception")
 
-# ========== User Inputs ==========
-user_name = st.text_input("Your Name:", "Guest")
-st.markdown(f"👋 Hello, **{user_name}**! Let's check the weather.")
-
-city = st.text_input("Enter a city name:", "Kuala Lumpur")
-api_key = st.text_input("Enter your WeatherAPI Key:", type="password")
-
-# ========== WeatherAPI Data Fetch Function ==========
+# ===== API Call Function =====
 @st.cache_data
-def get_weatherapi_data(city_name, key):
+def fetch_movie_data(title, key):
     try:
-        url = f"http://api.weatherapi.com/v1/forecast.json?key={key}&q={city_name}&days=5&aqi=no&alerts=no"
+        url = f"http://www.omdbapi.com/?t={title}&apikey={key}"
         response = requests.get(url)
         response.raise_for_status()
         return response.json()
     except Exception as e:
         return {"error": str(e)}
 
-# ========== API Call and Display ==========
-if st.button("Get Forecast"):
-    if not api_key or api_key.lower() == "password":
-        st.warning("⚠️ Please enter a **valid** WeatherAPI Key (not 'password').")
+# ===== Action Button =====
+if st.button("Search Movie"):
+    if not api_key:
+        st.warning("Please enter a valid OMDb API key.")
     else:
-        data = get_weatherapi_data(city, api_key)
+        data = fetch_movie_data(movie_title, api_key)
 
-        if "error" in data:
-            st.error(f"API Error: {data['error']}")
-        elif "location" not in data or "forecast" not in data:
-            st.error("❌ City not found or API response incomplete.")
+        if "error" in data or data.get("Response") == "False":
+            st.error(f"Movie not found or API error: {data.get('Error', 'Unknown error')}")
         else:
-            location = data["location"]
-            st.success(f"✅ Showing 5-day forecast for **{location['name']}**, {location['country']}")
+            # ===== Display Movie Info =====
+            st.subheader(f"🎞️ {data['Title']} ({data['Year']})")
+            st.image(data["Poster"])
+            st.markdown(f"**Genre**: {data['Genre']}")
+            st.markdown(f"**Director**: {data['Director']}")
+            st.markdown(f"**Actors**: {data['Actors']}")
+            st.markdown(f"**Plot**: {data['Plot']}")
 
-            # Parse forecast data
-            forecast_days = data["forecast"]["forecastday"]
-            forecast_data = []
+            # ===== Ratings Table =====
+            if data["Ratings"]:
+                st.subheader("⭐ Ratings")
+                ratings_df = pd.DataFrame(data["Ratings"])
+                ratings_df.columns = ["Source", "Value"]
+                st.dataframe(ratings_df)
 
-            for day in forecast_days:
-                for hour in day["hour"]:
-                    forecast_data.append({
-                        "datetime": hour["time"],
-                        "temperature": hour["temp_c"],
-                        "humidity": hour["humidity"],
-                        "condition": hour["condition"]["text"]
-                    })
+                # ===== Visualization 1: Ratings Bar Chart =====
+                st.subheader("📊 Ratings Comparison")
+                chart = alt.Chart(ratings_df).mark_bar().encode(
+                    x="Source",
+                    y=alt.Y("Value", sort="-x"),
+                    color=alt.Color("Source"),
+                    tooltip=["Source", "Value"]
+                ).properties(width=600)
+                st.altair_chart(chart)
 
-            df = pd.DataFrame(forecast_data)
-            df["datetime"] = pd.to_datetime(df["datetime"])
+            # ===== Visualization 2: Genre Breakdown =====
+            st.subheader("🎨 Genre Breakdown")
+            genres = [g.strip() for g in data["Genre"].split(",")]
+            genre_df = pd.DataFrame({"Genre": genres, "Count": [1] * len(genres)})
 
-            # ========== Visualization 1: Temperature Line Chart ==========
-            st.subheader("🌡️ Temperature Over Time")
-            line_chart = alt.Chart(df).mark_line(point=True).encode(
-                x='datetime:T',
-                y='temperature:Q',
-                tooltip=['datetime', 'temperature']
-            ).properties(width=700, height=400)
-            st.altair_chart(line_chart)
+            pie_chart = alt.Chart(genre_df).mark_arc().encode(
+                theta="Count",
+                color="Genre",
+                tooltip="Genre"
+            )
+            st.altair_chart(pie_chart)
 
-            # ========== Visualization 2: Humidity Bar Chart ==========
-            st.subheader("💧 Humidity Levels")
-            bar_chart = alt.Chart(df).mark_bar().encode(
-                x='datetime:T',
-                y='humidity:Q',
-                color=alt.value('#4fc3f7'),
-                tooltip=['datetime', 'humidity']
-            ).properties(width=700, height=400)
-            st.altair_chart(bar_chart)
+            # ===== Expandable Full JSON =====
+            with st.expander("🔍 See Full Raw JSON"):
+                st.json(data)
 
-            # ========== Forecast Table ==========
-            with st.expander("🔍 Show forecast table"):
-                st.dataframe(df)
 
 
