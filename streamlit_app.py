@@ -49,7 +49,33 @@ if st.button("Search Movie"):
             # ========== Visualization 1: Vote Rating vs Count ==========
             vote_data = pd.DataFrame({
                 "Metric": ["Average Rating", "Vote Count"],
+                "Value": [details["vote_average"], details["vote_count"]]
+            })
 
+            st.subheader("📊 Rating and Vote Count")
+            bar_chart = alt.Chart(vote_data).mark_bar().encode(
+                x="Metric",
+                y="Value",
+                color="Metric",
+                tooltip=["Metric", "Value"]
+            ).properties(width=600)
+            st.altair_chart(bar_chart)
+
+            # ========== Visualization 2: Genre Breakdown ==========
+            genres = [g["name"] for g in details["genres"]]
+            genre_df = pd.DataFrame({"Genre": genres, "Count": [1]*len(genres)})
+
+            st.subheader("🎨 Genre Breakdown")
+            pie_chart = alt.Chart(genre_df).mark_arc().encode(
+                theta="Count",
+                color="Genre",
+                tooltip="Genre"
+            )
+            st.altair_chart(pie_chart)
+
+            # ========== Optional: Full JSON ==========
+            with st.expander("🔍 See Full API Response"):
+                st.json(details)
 
 
 
