@@ -30,7 +30,7 @@ user_name = st.text_input("Your Name:", "Guest")
 st.markdown(f"👋 Hello, **{user_name}**! Let's check the weather.")
 
 city = st.text_input("Enter a city name:", "Kuala Lumpur")
-api_key = st.text_input("Enter your OpenWeatherMap API Key:", type="afiq")
+api_key = st.text_input("Enter your OpenWeatherMap API Key:", type="password")
 
 # ========== Weather Data Fetch Function ==========
 @st.cache_data
@@ -92,8 +92,4 @@ if st.button("Get Forecast"):
             # ========== Forecast Table ==========
             with st.expander("🔍 Show forecast table"):
                 st.dataframe(df)
-
-    with st.expander("See full exchange rates (JSON)"):
-        st.json(rates)
-
 
