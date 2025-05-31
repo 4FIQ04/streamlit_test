@@ -5,7 +5,6 @@ import altair as alt
 from datetime import datetime
 
 # ========== Streamlit UI Setup ==========
-
 st.set_page_config(page_title="Weather Forecast Dashboard", layout="centered")
 
 st.markdown("""
@@ -27,7 +26,6 @@ st.markdown('<div class="title">🌤️ Weather Forecast Dashboard</div>', unsaf
 st.markdown('<div class="subtitle">Check the latest weather trends by city</div>', unsafe_allow_html=True)
 
 # ========== User Inputs ==========
-
 user_name = st.text_input("Your Name:", "Guest")
 st.markdown(f"👋 Hello, **{user_name}**! Let's check the weather.")
 
@@ -45,22 +43,21 @@ def get_weather_data(city_name, key):
     except Exception as e:
         return {"error": str(e)}
 
-# ========== API Call and Error Handling ==========
-
+# ========== API Call and Display ==========
 if st.button("Get Forecast"):
-    if not api_key:
-        st.warning("Please provide a valid OpenWeatherMap API Key.")
+    if not api_key or api_key.lower() == "password":
+        st.warning("⚠️ Please enter a **valid** OpenWeatherMap API Key (not 'password').")
     else:
         data = get_weather_data(city, api_key)
 
         if "error" in data:
             st.error(f"API Error: {data['error']}")
         elif data.get("cod") != "200":
-            st.error("City not found or API returned an error.")
+            st.error("❌ City not found or the API returned an error.")
         else:
-            st.success(f"Showing 5-day forecast for {data['city']['name']}, {data['city']['country']}")
+            st.success(f"✅ Showing 5-day forecast for **{data['city']['name']}**, {data['city']['country']}")
 
-            # Parse and prepare data
+            # Parse forecast data
             forecast_data = []
             for item in data['list']:
                 forecast_data.append({
@@ -92,13 +89,10 @@ if st.button("Get Forecast"):
             ).properties(width=700, height=400)
             st.altair_chart(bar_chart)
 
-            # ========== Optional: Forecast Table ==========
+            # ========== Forecast Table ==========
             with st.expander("🔍 Show forecast table"):
                 st.dataframe(df)
 
-
-
-    # Optional: Show raw JSON
     with st.expander("See full exchange rates (JSON)"):
         st.json(rates)
 
