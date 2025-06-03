@@ -92,7 +92,6 @@ if query.strip() == "":
             st.markdown(f"**{movie['title']}**")
             if movie.get("poster_path"):
                 st.image(f"https://image.tmdb.org/t/p/w200{movie['poster_path']}", use_container_width=True)
-
             st.caption(movie.get("overview", "No overview available."))
 else:
     # ========== Search Result ==========
@@ -160,17 +159,23 @@ else:
                 )
             )
 
-            # Review
+            # Review Section (Fixed)
             st.markdown("---")
             st.subheader("📝 Your Review")
             with st.form("review_form"):
                 user_review = st.text_area("Write your review here (optional):", "")
-                star_rating = st.radio(
-                    "Rate this movie:",
-                    options=list(range(0, 6)),
-                    format_func=lambda x: "⭐" * x + "☆" * (5 - x),
-                    horizontal=True
-                )
+
+                # Rating options with emojis
+                rating_options = {
+                    "⭐☆☆☆☆": 1,
+                    "⭐⭐☆☆☆": 2,
+                    "⭐⭐⭐☆☆": 3,
+                    "⭐⭐⭐⭐☆": 4,
+                    "⭐⭐⭐⭐⭐": 5
+                }
+                selected_label = st.radio("Rate this movie:", list(rating_options.keys()), horizontal=True)
+                star_rating = rating_options[selected_label]
+
                 submitted = st.form_submit_button("Submit Review")
                 if submitted:
                     st.success("✅ Thank you for your review!")
