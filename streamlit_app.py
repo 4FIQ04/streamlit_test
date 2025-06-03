@@ -25,7 +25,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-
 # ========== App Title ==========
 st.title("🎥 :rainbow[Movie Explorer App]")
 st.markdown("Search movies by title and explore storyline, director, stars, stats, and trailer.")
@@ -135,22 +134,36 @@ if st.button("Search Movie"):
         st.markdown("---")
         st.subheader("📝 Your Review")
 
-        user_review = st.text_area("Write your review here (optional):", "")
+        # Initialize session state
+        if "submitted" not in st.session_state:
+            st.session_state["submitted"] = False
+        if "saved_review" not in st.session_state:
+            st.session_state["saved_review"] = ""
+        if "saved_rating" not in st.session_state:
+            st.session_state["saved_rating"] = 0
 
-        # Star rating using emoji via radio
-        star_options = list(range(0, 6))  # 0 to 5 stars
+        # Input widgets
+        user_review = st.text_area("Write your review here (optional):", "")
+        star_options = list(range(0, 6))
         star_rating = st.radio(
-            "Rate this movie:", 
+            "Rate this movie:",
             options=star_options,
             format_func=lambda x: "⭐" * x + "☆" * (5 - x),
             horizontal=True
         )
 
+        # Submit button
         if st.button("Submit Review"):
+            st.session_state["submitted"] = True
+            st.session_state["saved_review"] = user_review
+            st.session_state["saved_rating"] = star_rating
             st.success("✅ Thank you for your review!")
-            st.markdown(f"👤 Reviewed by:** {user_name}")
-            st.markdown(f"⭐ Your Rating:** {star_rating} / 5")
-            if user_review.strip():
-                st.markdown(f"📝 Your Review:** {user_review}")
+
+        # Show saved review
+        if st.session_state["submitted"]:
+            st.markdown(f"👤 **Reviewed by:** {user_name}")
+            st.markdown(f"⭐ **Your Rating:** {st.session_state['saved_rating']} / 5")
+            if st.session_state["saved_review"].strip():
+                st.markdown(f"📝 **Your Review:** {st.session_state['saved_review']}")
             else:
                 st.markdown("No written review provided.")
