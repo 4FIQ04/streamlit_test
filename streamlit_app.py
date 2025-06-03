@@ -160,30 +160,32 @@ else:
             )
 
             # Review Section (Fixed)
-            st.markdown("---")
-            st.subheader("📝 Your Review")
-            with st.form("review_form"):
-                user_review = st.text_area("Write your review here (optional):", "")
+st.markdown("---")
+st.subheader("📝 Your Review")
+with st.form("review_form"):
+    user_review = st.text_area("Write your review here (optional):", "")
 
-                # Rating options with emojis
-                rating_options = {
-                    "⭐☆☆☆☆": 1,
-                    "⭐⭐☆☆☆": 2,
-                    "⭐⭐⭐☆☆": 3,
-                    "⭐⭐⭐⭐☆": 4,
-                    "⭐⭐⭐⭐⭐": 5
-                }
-                selected_label = st.radio("Rate this movie:", list(rating_options.keys()), horizontal=True)
-                star_rating = rating_options[selected_label]
+    # Rating options with emojis
+    rating_options = {
+        "☆☆☆☆☆ (0)": 0,
+        "⭐☆☆☆☆ (1)": 1,
+        "⭐⭐☆☆☆ (2)": 2,
+        "⭐⭐⭐☆☆ (3)": 3,
+        "⭐⭐⭐⭐☆ (4)": 4,
+        "⭐⭐⭐⭐⭐ (5)": 5
+    }
+    rating_labels = list(rating_options.keys())
+    default_index = 5  # Default to 5 stars
 
-                submitted = st.form_submit_button("Submit Review")
-                if submitted:
-                    st.success("✅ Thank you for your review!")
-                    st.markdown(f"👤 Reviewed by: **{user_name}**")
-                    st.markdown(f"⭐ Your Rating: **{star_rating} / 5**")
-                    if user_review.strip():
-                        st.markdown(f"📝 Your Review: **{user_review}**")
-                    else:
-                        st.markdown("No written review provided.")
+    selected_label = st.radio("Rate this movie:", rating_labels, index=default_index, horizontal=True)
+    star_rating = rating_options.get(selected_label, 0)
 
-
+    submitted = st.form_submit_button("Submit Review")
+    if submitted:
+        st.success("✅ Thank you for your review!")
+        st.markdown(f"👤 Reviewed by: **{user_name}**")
+        st.markdown(f"⭐ Your Rating: **{star_rating} / 5**")
+        if user_review.strip():
+            st.markdown(f"📝 Your Review: **{user_review}**")
+        else:
+            st.markdown("No written review provided.")
