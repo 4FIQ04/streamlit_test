@@ -36,10 +36,14 @@ st.markdown("""
 st.title("🎥 :rainbow[Movie Explorer App]")
 st.markdown("*Search movies by title and explore ratings, genres, and details.*")
 
-# ========== Developer API Key ==========
-API_KEY = "4f658b3a4df357c0e36dea39fe745497"  # Replace with your actual API key
+# ========== User Name Input ==========
+user_name = st.text_input("Enter your name:", "Guest")
+st.markdown(f"👋 Hello, **{user_name}**! Ready to explore some movies?")
 
-# ========== User Input ==========
+# ========== Developer API Key ==========
+API_KEY = "4f658b3a4df357c0e36dea39fe745497"  # Replace with your own TMDb API key
+
+# ========== Movie Title Input ==========
 query = st.text_input("Enter a movie title:", "Sheriff: Narko Integriti")
 
 # ========== TMDb API Call Functions ==========
@@ -99,4 +103,3 @@ if st.button("Search Movie"):
             tooltip="Genre"
         )
         st.altair_chart(pie_chart)
-
