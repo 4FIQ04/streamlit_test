@@ -6,7 +6,7 @@ import altair as alt
 # ========== Streamlit UI Setup ==========
 st.set_page_config(page_title="🎬 Movie Explorer", layout="centered")
 
-# ========== Dark Animated Background ==========
+# ========== Background Styling ==========
 st.markdown("""
     <style>
     body {
@@ -34,19 +34,30 @@ st.markdown("""
 
 # ========== App Title ==========
 st.title("🎥 :rainbow[Movie Explorer App]")
-st.markdown("Search movies by title and explore storyline, director, stars, and stats.")
+st.markdown("Search movies by title or browse categories. Explore storyline, stats, trailer, and submit a review.")
 
-# ========== User Name Input ==========
+# ========== User Name ==========
 user_name = st.text_input("Enter your name:", "Guest")
 st.markdown(f"👋 Hello, *{user_name}*! Let's explore some movies.")
 
-# ========== Developer API Key ==========
-API_KEY = "4f658b3a4df357c0e36dea39fe745497"  # Replace with your TMDb API key
+# ========== TMDb API ==========
+API_KEY = "4f658b3a4df357c0e36dea39fe745497"  # Replace with your own TMDb API key
 
-# ========== Movie Title Input ==========
-query = st.text_input("Enter a movie title:", "Sheriff: Narko Integriti")
+# ========== Movie Search ==========
+query = st.text_input("Enter a movie title:", "")
 
-# ========== TMDb API Call Functions ==========
+# ========== Category Dropdown ==========
+st.markdown("## 🎯 Browse by Category")
+
+category = st.selectbox("Or select a category:", ["Popular", "Now Playing", "Upcoming", "Top Rated"])
+category_map = {
+    "Popular": "popular",
+    "Now Playing": "now_playing",
+    "Upcoming": "upcoming",
+    "Top Rated": "top_rated"
+}
+
+# ========== TMDb API Functions ==========
 def search_movie(query, api_key):
     url = f"https://api.themoviedb.org/3/search/movie?api_key={api_key}&query={query}"
     return requests.get(url).json()
@@ -67,116 +78,106 @@ def get_movie_trailer(movie_id, api_key):
             return f"https://www.youtube.com/watch?v={video['key']}"
     return None
 
-# ========== State Initialization ==========
-if "movie_data" not in st.session_state:
-    st.session_state.movie_data = None
+def get_movies_by_category(category_key, api_key):
+    url = f"https://api.themoviedb.org/3/movie/{category_key}?api_key={api_key}&language=en-US&page=1"
+    return requests.get(url).json().get("results", [])
 
-# ========== Search Movie ==========
-if st.button("Search Movie"):
-    search_result = search_movie(query, API_KEY)
+# ========== Handle Category Browse ==========
+if query.strip() == "":
+    st.markdown(f"### 🎞 {category} Movies")
+    movies = get_movies_by_category(category_map[category], API_KEY)
+    cols = st.columns(3)
+    for i, movie in enumerate(movies[:9]):
+        with cols[i % 3]:
+            st.markdown(f"**{movie['title']}**")
+            if movie.get("poster_path"):
+                st.image(f"https://image.tmdb.org/t/p/w200{movie['poster_path']}", use_column_width=True)
+            st.caption(movie.get("overview", "No overview available."))
+else:
+    # ========== Search Result ==========
+    if st.button("Search Movie"):
+        search_result = search_movie(query, API_KEY)
 
-    if "results" not in search_result or len(search_result["results"]) == 0:
-        st.session_state.movie_data = None
-        st.error("❌ No movie found with that title.")
-    else:
-        movie = search_result["results"][0]
-        movie_id = movie["id"]
-        details = get_movie_details(movie_id, API_KEY)
-        credits = get_movie_credits(movie_id, API_KEY)
-        trailer_url = get_movie_trailer(movie_id, API_KEY)
-
-        # Get director
-        director = "Unknown"
-        for member in credits.get("crew", []):
-            if member["job"] == "Director":
-                director = member["name"]
-                break
-
-        # Get top 3 actors
-        cast_list = credits.get("cast", [])
-        top_cast = ", ".join([actor["name"] for actor in cast_list[:3]]) if cast_list else "N/A"
-
-        # Save to session state
-        st.session_state.movie_data = {
-            "details": details,
-            "director": director,
-            "top_cast": top_cast,
-            "trailer_url": trailer_url
-        }
-
-# ========== Display Movie Info ==========
-if st.session_state.movie_data:
-    details = st.session_state.movie_data["details"]
-    director = st.session_state.movie_data["director"]
-    top_cast = st.session_state.movie_data["top_cast"]
-    trailer_url = st.session_state.movie_data["trailer_url"]
-
-    st.subheader(f"🎞 {details['title']} ({details['release_date'][:4]})")
-    if details.get("poster_path"):
-        st.image(f"https://image.tmdb.org/t/p/w500{details['poster_path']}")
-    st.markdown(f"*Storyline*: {details.get('overview', 'No overview available.')}")
-    st.markdown(f"*Director*: {director}")
-    st.markdown(f"*Stars*: {top_cast}")
-    st.markdown(f"*Runtime*: {details.get('runtime', 'N/A')} mins")
-    st.markdown(f"*Vote Average*: {details['vote_average']}")
-    st.markdown(f"*Total Votes*: {details['vote_count']}")
-
-    # ========== Movie Trailer ==========
-    if trailer_url:
-        st.subheader("🎬 Watch Trailer")
-        st.video(trailer_url)
-    else:
-        st.info("🚫 No trailer available.")
-
-    # ========== Visualization 1: Vote Rating vs Count ==========
-    vote_data = pd.DataFrame({
-        "Metric": ["Average Rating", "Vote Count"],
-        "Value": [details["vote_average"], details["vote_count"]]
-    })
-
-    st.subheader("📊 Rating and Vote Count")
-    bar_chart = alt.Chart(vote_data).mark_bar().encode(
-        x="Metric",
-        y="Value",
-        color=alt.Color("Metric", scale=alt.Scale(scheme='dark2')),
-        tooltip=["Metric", "Value"]
-    ).properties(width=600)
-    st.altair_chart(bar_chart)
-
-    # ========== Visualization 2: Genre Breakdown ==========
-    genres = [g["name"] for g in details["genres"]]
-    genre_df = pd.DataFrame({"Genre": genres, "Count": [1]*len(genres)})
-
-    st.subheader("🎨 Genre Breakdown")
-    pie_chart = alt.Chart(genre_df).mark_arc().encode(
-        theta="Count",
-        color=alt.Color("Genre", scale=alt.Scale(scheme='tableau10')),
-        tooltip="Genre"
-    )
-    st.altair_chart(pie_chart)
-
-    # ========== User Review Section ==========
-    st.markdown("---")
-    st.subheader("📝 Your Review")
-
-    user_review = st.text_area("Write your review here (optional):", key="review_text")
-
-    star_options = list(range(0, 6))  # 0 to 5 stars
-    star_rating = st.radio(
-        "Rate this movie:",
-        options=star_options,
-        format_func=lambda x: "⭐" * x + "☆" * (5 - x),
-        horizontal=True,
-        key="review_rating"
-    )
-
-    if st.button("Submit Review"):
-        st.success("✅ Thank you for your review!")
-        st.markdown(f"👤 Reviewed by: **{user_name}**")
-        st.markdown(f"⭐ Your Rating: **{star_rating} / 5**")
-        if user_review.strip():
-            st.markdown(f"📝 Your Review: **{user_review}**")
+        if "results" not in search_result or len(search_result["results"]) == 0:
+            st.error("❌ No movie found with that title.")
         else:
-            st.markdown("No written review provided.")
+            movie = search_result["results"][0]
+            movie_id = movie["id"]
+            details = get_movie_details(movie_id, API_KEY)
+            credits = get_movie_credits(movie_id, API_KEY)
+            trailer_url = get_movie_trailer(movie_id, API_KEY)
+
+            # Director
+            director = next((m["name"] for m in credits.get("crew", []) if m["job"] == "Director"), "Unknown")
+
+            # Top Cast
+            cast_list = credits.get("cast", [])
+            top_cast = ", ".join([actor["name"] for actor in cast_list[:3]]) if cast_list else "N/A"
+
+            # Movie Info
+            st.subheader(f"🎞 {details['title']} ({details.get('release_date', '')[:4]})")
+            if details.get("poster_path"):
+                st.image(f"https://image.tmdb.org/t/p/w500{details['poster_path']}")
+            st.markdown(f"*Storyline*: {details.get('overview', 'No overview available.')}")
+            st.markdown(f"*Director*: {director}")
+            st.markdown(f"*Stars*: {top_cast}")
+            st.markdown(f"*Runtime*: {details.get('runtime', 'N/A')} mins")
+            st.markdown(f"*Vote Average*: {details['vote_average']}")
+            st.markdown(f"*Total Votes*: {details['vote_count']}")
+
+            # Trailer
+            if trailer_url:
+                st.subheader("🎬 Watch Trailer")
+                st.video(trailer_url)
+            else:
+                st.info("No trailer available.")
+
+            # Chart: Ratings
+            vote_data = pd.DataFrame({
+                "Metric": ["Average Rating", "Vote Count"],
+                "Value": [details["vote_average"], details["vote_count"]]
+            })
+            st.subheader("📊 Rating and Vote Count")
+            st.altair_chart(
+                alt.Chart(vote_data).mark_bar().encode(
+                    x="Metric",
+                    y="Value",
+                    color=alt.Color("Metric", scale=alt.Scale(scheme='dark2')),
+                    tooltip=["Metric", "Value"]
+                ).properties(width=600)
+            )
+
+            # Chart: Genre
+            genres = [g["name"] for g in details["genres"]]
+            genre_df = pd.DataFrame({"Genre": genres, "Count": [1]*len(genres)})
+            st.subheader("🎨 Genre Breakdown")
+            st.altair_chart(
+                alt.Chart(genre_df).mark_arc().encode(
+                    theta="Count",
+                    color=alt.Color("Genre", scale=alt.Scale(scheme='tableau10')),
+                    tooltip="Genre"
+                )
+            )
+
+            # Review
+            st.markdown("---")
+            st.subheader("📝 Your Review")
+            with st.form("review_form"):
+                user_review = st.text_area("Write your review here (optional):", "")
+                star_rating = st.radio(
+                    "Rate this movie:",
+                    options=list(range(0, 6)),
+                    format_func=lambda x: "⭐" * x + "☆" * (5 - x),
+                    horizontal=True
+                )
+                submitted = st.form_submit_button("Submit Review")
+                if submitted:
+                    st.success("✅ Thank you for your review!")
+                    st.markdown(f"👤 Reviewed by: **{user_name}**")
+                    st.markdown(f"⭐ Your Rating: **{star_rating} / 5**")
+                    if user_review.strip():
+                        st.markdown(f"📝 Your Review: **{user_review}**")
+                    else:
+                        st.markdown("No written review provided.")
 
 
