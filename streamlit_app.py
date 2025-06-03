@@ -67,11 +67,16 @@ def get_movie_trailer(movie_id, api_key):
             return f"https://www.youtube.com/watch?v={video['key']}"
     return None
 
-# ========== Fetch and Display Data ==========
+# ========== State Initialization ==========
+if "movie_data" not in st.session_state:
+    st.session_state.movie_data = None
+
+# ========== Search Movie ==========
 if st.button("Search Movie"):
     search_result = search_movie(query, API_KEY)
 
     if "results" not in search_result or len(search_result["results"]) == 0:
+        st.session_state.movie_data = None
         st.error("❌ No movie found with that title.")
     else:
         movie = search_result["results"][0]
@@ -91,71 +96,87 @@ if st.button("Search Movie"):
         cast_list = credits.get("cast", [])
         top_cast = ", ".join([actor["name"] for actor in cast_list[:3]]) if cast_list else "N/A"
 
-        # ========== Movie Info ==========
-        st.subheader(f"🎞 {details['title']} ({details['release_date'][:4]})")
-        if details.get("poster_path"):
-            st.image(f"https://image.tmdb.org/t/p/w500{details['poster_path']}")
-        st.markdown(f"*Storyline*: {details.get('overview', 'No overview available.')}")
-        st.markdown(f"*Director*: {director}")
-        st.markdown(f"*Stars*: {top_cast}")
-        st.markdown(f"*Runtime*: {details.get('runtime', 'N/A')} mins")
-        st.markdown(f"*Vote Average*: {details['vote_average']}")
-        st.markdown(f"*Total Votes*: {details['vote_count']}")
+        # Save to session state
+        st.session_state.movie_data = {
+            "details": details,
+            "director": director,
+            "top_cast": top_cast,
+            "trailer_url": trailer_url
+        }
 
-        # ========== Movie Trailer ==========
-        if trailer_url:
-            st.subheader("🎬 Watch Trailer")
-            st.video(trailer_url)
+# ========== Display Movie Info ==========
+if st.session_state.movie_data:
+    details = st.session_state.movie_data["details"]
+    director = st.session_state.movie_data["director"]
+    top_cast = st.session_state.movie_data["top_cast"]
+    trailer_url = st.session_state.movie_data["trailer_url"]
+
+    st.subheader(f"🎞 {details['title']} ({details['release_date'][:4]})")
+    if details.get("poster_path"):
+        st.image(f"https://image.tmdb.org/t/p/w500{details['poster_path']}")
+    st.markdown(f"*Storyline*: {details.get('overview', 'No overview available.')}")
+    st.markdown(f"*Director*: {director}")
+    st.markdown(f"*Stars*: {top_cast}")
+    st.markdown(f"*Runtime*: {details.get('runtime', 'N/A')} mins")
+    st.markdown(f"*Vote Average*: {details['vote_average']}")
+    st.markdown(f"*Total Votes*: {details['vote_count']}")
+
+    # ========== Movie Trailer ==========
+    if trailer_url:
+        st.subheader("🎬 Watch Trailer")
+        st.video(trailer_url)
+    else:
+        st.info("🚫 No trailer available.")
+
+    # ========== Visualization 1: Vote Rating vs Count ==========
+    vote_data = pd.DataFrame({
+        "Metric": ["Average Rating", "Vote Count"],
+        "Value": [details["vote_average"], details["vote_count"]]
+    })
+
+    st.subheader("📊 Rating and Vote Count")
+    bar_chart = alt.Chart(vote_data).mark_bar().encode(
+        x="Metric",
+        y="Value",
+        color=alt.Color("Metric", scale=alt.Scale(scheme='dark2')),
+        tooltip=["Metric", "Value"]
+    ).properties(width=600)
+    st.altair_chart(bar_chart)
+
+    # ========== Visualization 2: Genre Breakdown ==========
+    genres = [g["name"] for g in details["genres"]]
+    genre_df = pd.DataFrame({"Genre": genres, "Count": [1]*len(genres)})
+
+    st.subheader("🎨 Genre Breakdown")
+    pie_chart = alt.Chart(genre_df).mark_arc().encode(
+        theta="Count",
+        color=alt.Color("Genre", scale=alt.Scale(scheme='tableau10')),
+        tooltip="Genre"
+    )
+    st.altair_chart(pie_chart)
+
+    # ========== User Review Section ==========
+    st.markdown("---")
+    st.subheader("📝 Your Review")
+
+    user_review = st.text_area("Write your review here (optional):", key="review_text")
+
+    star_options = list(range(0, 6))  # 0 to 5 stars
+    star_rating = st.radio(
+        "Rate this movie:",
+        options=star_options,
+        format_func=lambda x: "⭐" * x + "☆" * (5 - x),
+        horizontal=True,
+        key="review_rating"
+    )
+
+    if st.button("Submit Review"):
+        st.success("✅ Thank you for your review!")
+        st.markdown(f"👤 Reviewed by: **{user_name}**")
+        st.markdown(f"⭐ Your Rating: **{star_rating} / 5**")
+        if user_review.strip():
+            st.markdown(f"📝 Your Review: **{user_review}**")
         else:
-            st.info("🚫 No trailer available.")
+            st.markdown("No written review provided.")
 
-        # ========== Visualization 1: Vote Rating vs Count ==========
-        vote_data = pd.DataFrame({
-            "Metric": ["Average Rating", "Vote Count"],
-            "Value": [details["vote_average"], details["vote_count"]]
-        })
-
-        st.subheader("📊 Rating and Vote Count")
-        bar_chart = alt.Chart(vote_data).mark_bar().encode(
-            x="Metric",
-            y="Value",
-            color=alt.Color("Metric", scale=alt.Scale(scheme='dark2')),
-            tooltip=["Metric", "Value"]
-        ).properties(width=600)
-        st.altair_chart(bar_chart)
-
-        # ========== Visualization 2: Genre Breakdown ==========
-        genres = [g["name"] for g in details["genres"]]
-        genre_df = pd.DataFrame({"Genre": genres, "Count": [1]*len(genres)})
-
-        st.subheader("🎨 Genre Breakdown")
-        pie_chart = alt.Chart(genre_df).mark_arc().encode(
-            theta="Count",
-            color=alt.Color("Genre", scale=alt.Scale(scheme='tableau10')),
-            tooltip="Genre"
-        )
-        st.altair_chart(pie_chart)
-
-        # ========== User Review Section ==========
-        st.markdown("---")
-        st.subheader("📝 Your Review")
-
-        user_review = st.text_area("Write your review here (optional):", "")
-
-        star_options = list(range(0, 6))  # 0 to 5 stars
-        star_rating = st.radio(
-            "Rate this movie:", 
-            options=star_options,
-            format_func=lambda x: "⭐" * x + "☆" * (5 - x),
-            horizontal=True
-        )
-
-        if st.button("Submit Review"):
-            st.success("✅ Thank you for your review!")
-            st.markdown(f"👤 Reviewed by: **{user_name}**")
-            st.markdown(f"⭐ Your Rating: **{star_rating} / 5**")
-            if user_review.strip():
-                st.markdown(f"📝 Your Review: **{user_review}**")
-            else:
-                st.markdown("No written review provided.")
 
