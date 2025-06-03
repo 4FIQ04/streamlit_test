@@ -6,7 +6,7 @@ import altair as alt
 # ========== Streamlit UI Setup ==========
 st.set_page_config(page_title="🎬 Movie Explorer", layout="centered")
 
-# ========== Custom Dark Theme & Animated Background ==========
+# ========== Dark Animated Background ==========
 st.markdown("""
     <style>
     body {
@@ -34,14 +34,14 @@ st.markdown("""
 
 # ========== App Title ==========
 st.title("🎥 :rainbow[Movie Explorer App]")
-st.markdown("*Search movies by title and explore ratings, genres, and details.*")
+st.markdown("*Search movies by title and explore storyline, director, stars, and stats.*")
 
 # ========== User Name Input ==========
 user_name = st.text_input("Enter your name:", "Guest")
-st.markdown(f"👋 Hello, **{user_name}**! Ready to explore some movies?")
+st.markdown(f"👋 Hello, **{user_name}**! Let's explore some movies.")
 
 # ========== Developer API Key ==========
-API_KEY = "4f658b3a4df357c0e36dea39fe745497"  # Replace with your own TMDb API key
+API_KEY = "4f658b3a4df357c0e36dea39fe745497"  # Replace with your TMDb API key
 
 # ========== Movie Title Input ==========
 query = st.text_input("Enter a movie title:", "Sheriff: Narko Integriti")
@@ -49,13 +49,15 @@ query = st.text_input("Enter a movie title:", "Sheriff: Narko Integriti")
 # ========== TMDb API Call Functions ==========
 def search_movie(query, api_key):
     url = f"https://api.themoviedb.org/3/search/movie?api_key={api_key}&query={query}"
-    response = requests.get(url)
-    return response.json()
+    return requests.get(url).json()
 
 def get_movie_details(movie_id, api_key):
     url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={api_key}"
-    response = requests.get(url)
-    return response.json()
+    return requests.get(url).json()
+
+def get_movie_credits(movie_id, api_key):
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}/credits?api_key={api_key}"
+    return requests.get(url).json()
 
 # ========== Fetch and Display Data ==========
 if st.button("Search Movie"):
@@ -67,13 +69,28 @@ if st.button("Search Movie"):
         movie = search_result["results"][0]
         movie_id = movie["id"]
         details = get_movie_details(movie_id, API_KEY)
+        credits = get_movie_credits(movie_id, API_KEY)
+
+        # Get director from crew
+        director = "Unknown"
+        for member in credits.get("crew", []):
+            if member["job"] == "Director":
+                director = member["name"]
+                break
+
+        # Get top 3 actors
+        cast_list = credits.get("cast", [])
+        top_cast = ", ".join([actor["name"] for actor in cast_list[:3]]) if cast_list else "N/A"
 
         # ========== Movie Info ==========
         st.subheader(f"🎞 {details['title']} ({details['release_date'][:4]})")
         if details.get("poster_path"):
             st.image(f"https://image.tmdb.org/t/p/w500{details['poster_path']}")
-        st.markdown(f"**Overview**: {details['overview']}")
-        st.markdown(f"**Runtime**: {details['runtime']} mins")
+
+        st.markdown(f"**Storyline**: {details.get('overview', 'No overview available.')}")
+        st.markdown(f"**Director**: {director}")
+        st.markdown(f"**Stars**: {top_cast}")
+        st.markdown(f"**Runtime**: {details.get('runtime', 'N/A')} mins")
         st.markdown(f"**Vote Average**: {details['vote_average']}")
         st.markdown(f"**Total Votes**: {details['vote_count']}")
 
@@ -103,3 +120,4 @@ if st.button("Search Movie"):
             tooltip="Genre"
         )
         st.altair_chart(pie_chart)
+
