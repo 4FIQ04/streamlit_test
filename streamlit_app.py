@@ -71,7 +71,7 @@ if st.button("Search Movie"):
         details = get_movie_details(movie_id, API_KEY)
         credits = get_movie_credits(movie_id, API_KEY)
 
-        # Get director from crew
+        # Get director
         director = "Unknown"
         for member in credits.get("crew", []):
             if member["job"] == "Director":
@@ -86,7 +86,6 @@ if st.button("Search Movie"):
         st.subheader(f"🎞 {details['title']} ({details['release_date'][:4]})")
         if details.get("poster_path"):
             st.image(f"https://image.tmdb.org/t/p/w500{details['poster_path']}")
-
         st.markdown(f"**Storyline**: {details.get('overview', 'No overview available.')}")
         st.markdown(f"**Director**: {director}")
         st.markdown(f"**Stars**: {top_cast}")
@@ -120,4 +119,21 @@ if st.button("Search Movie"):
             tooltip="Genre"
         )
         st.altair_chart(pie_chart)
+
+        # ========== User Review Section ==========
+        st.markdown("---")
+        st.subheader("📝 Your Review")
+
+        user_review = st.text_area("Write your review here (optional):", "")
+        user_rating = st.slider("Rate this movie (0 to 5 stars):", 0.0, 5.0, 3.0, step=0.5)
+
+        if st.button("Submit Review"):
+            st.success("✅ Thank you for your review!")
+            st.markdown(f"**👤 Reviewed by:** {user_name}")
+            st.markdown(f"**⭐ Your Rating:** {user_rating} / 5")
+            if user_review.strip():
+                st.markdown(f"**📝 Your Review:** {user_review}")
+            else:
+                st.markdown("_No written review provided._")
+
 
