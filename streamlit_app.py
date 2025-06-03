@@ -91,7 +91,8 @@ if query.strip() == "":
         with cols[i % 3]:
             st.markdown(f"**{movie['title']}**")
             if movie.get("poster_path"):
-                st.image(f"https://image.tmdb.org/t/p/w200{movie['poster_path']}", use_column_width=True)
+                st.image(f"https://image.tmdb.org/t/p/w200{movie['poster_path']}", use_container_width=True)
+
             st.caption(movie.get("overview", "No overview available."))
 else:
     # ========== Search Result ==========
