@@ -121,19 +121,27 @@ if st.button("Search Movie"):
         st.altair_chart(pie_chart)
 
         # ========== User Review Section ==========
-        st.markdown("---")
-        st.subheader("📝 Your Review")
+st.markdown("---")
+st.subheader("📝 Your Review")
 
-        user_review = st.text_area("Write your review here (optional):", "")
-        user_rating = st.slider("Rate this movie (0 to 5 stars):", 0.0, 5.0, 3.0, step=0.5)
+user_review = st.text_area("Write your review here (optional):", "")
 
-        if st.button("Submit Review"):
-            st.success("✅ Thank you for your review!")
-            st.markdown(f"**👤 Reviewed by:** {user_name}")
-            st.markdown(f"**⭐ Your Rating:** {user_rating} / 5")
-            if user_review.strip():
-                st.markdown(f"**📝 Your Review:** {user_review}")
-            else:
-                st.markdown("_No written review provided._")
+# Star rating using emoji via radio
+star_options = list(range(0, 6))  # 0 to 5 stars
+star_rating = st.radio(
+    "Rate this movie:", 
+    options=star_options,
+    format_func=lambda x: "⭐" * x + "☆" * (5 - x),
+    horizontal=True
+)
+
+if st.button("Submit Review"):
+    st.success("✅ Thank you for your review!")
+    st.markdown(f"**👤 Reviewed by:** {user_name}")
+    st.markdown(f"**⭐ Your Rating:** {star_rating} / 5")
+    if user_review.strip():
+        st.markdown(f"**📝 Your Review:** {user_review}")
+    else:
+        st.markdown("_No written review provided._")
 
 
