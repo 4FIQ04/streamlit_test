@@ -59,6 +59,14 @@ def get_movie_credits(movie_id, api_key):
     url = f"https://api.themoviedb.org/3/movie/{movie_id}/credits?api_key={api_key}"
     return requests.get(url).json()
 
+def get_movie_trailer(movie_id, api_key):
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}/videos?api_key={api_key}"
+    videos = requests.get(url).json().get("results", [])
+    for video in videos:
+        if video["type"] == "Trailer" and video["site"] == "YouTube":
+            return f"https://www.youtube.com/watch?v={video['key']}"
+    return None
+
 # ========== Fetch and Display Data ==========
 if st.button("Search Movie"):
     search_result = search_movie(query, API_KEY)
@@ -70,6 +78,7 @@ if st.button("Search Movie"):
         movie_id = movie["id"]
         details = get_movie_details(movie_id, API_KEY)
         credits = get_movie_credits(movie_id, API_KEY)
+        trailer_url = get_movie_trailer(movie_id, API_KEY)
 
         # Get director
         director = "Unknown"
@@ -92,6 +101,13 @@ if st.button("Search Movie"):
         st.markdown(f"*Runtime*: {details.get('runtime', 'N/A')} mins")
         st.markdown(f"*Vote Average*: {details['vote_average']}")
         st.markdown(f"*Total Votes*: {details['vote_count']}")
+
+        # ========== Movie Trailer ==========
+        if trailer_url:
+            st.subheader("🎬 Watch Trailer")
+            st.video(trailer_url)
+        else:
+            st.info("🚫 No trailer available.")
 
         # ========== Visualization 1: Vote Rating vs Count ==========
         vote_data = pd.DataFrame({
@@ -121,25 +137,25 @@ if st.button("Search Movie"):
         st.altair_chart(pie_chart)
 
         # ========== User Review Section ==========
-st.markdown("---")
-st.subheader("📝 Your Review")
+        st.markdown("---")
+        st.subheader("📝 Your Review")
 
-user_review = st.text_area("Write your review here (optional):", "")
+        user_review = st.text_area("Write your review here (optional):", "")
 
-# Star rating using emoji via radio
-star_options = list(range(0, 6))  # 0 to 5 stars
-star_rating = st.radio(
-    "Rate this movie:", 
-    options=star_options,
-    format_func=lambda x: "⭐" * x + "☆" * (5 - x),
-    horizontal=True
-)
+        star_options = list(range(0, 6))  # 0 to 5 stars
+        star_rating = st.radio(
+            "Rate this movie:", 
+            options=star_options,
+            format_func=lambda x: "⭐" * x + "☆" * (5 - x),
+            horizontal=True
+        )
 
-if st.button("Submit Review"):
-    st.success("✅ Thank you for your review!")
-    st.markdown(f"👤 Reviewed by:** {user_name}")
-    st.markdown(f"⭐ Your Rating:** {star_rating} / 5")
-    if user_review.strip():
-        st.markdown(f"📝 Your Review:** {user_review}")
-    else:
-        st.markdown("No written review provided.")
+        if st.button("Submit Review"):
+            st.success("✅ Thank you for your review!")
+            st.markdown(f"👤 Reviewed by: **{user_name}**")
+            st.markdown(f"⭐ Your Rating: **{star_rating} / 5**")
+            if user_review.strip():
+                st.markdown(f"📝 Your Review: **{user_review}**")
+            else:
+                st.markdown("No written review provided.")
+
