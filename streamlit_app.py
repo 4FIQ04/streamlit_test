@@ -10,27 +10,21 @@ st.set_page_config(page_title="🎬 Movie Explorer", layout="centered")
 st.markdown("""
     <style>
     body {
-        background: linear-gradient(-45deg, #1e1e2f, #2a2a3f, #1a1a2e, #10101a);
-        background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite;
-        color: white;
+        background: linear-gradient(135deg, #c6f0e2, #ffe0d2);
+        color: #333;
     }
     .stApp {
-        background-color: rgba(0, 0, 0, 0.6);
+        background-color: rgba(255, 255, 255, 0.7);
         border-radius: 15px;
         padding: 20px;
         font-family: 'Segoe UI', sans-serif;
     }
     h1, h2, h3, h4, h5, h6, .stMarkdown {
-        color: #ffffff !important;
-    }
-    @keyframes gradientBG {
-        0% {background-position: 0% 50%;}
-        50% {background-position: 100% 50%;}
-        100% {background-position: 0% 50%;}
+        color: #222 !important;
     }
     </style>
 """, unsafe_allow_html=True)
+
 
 # ========== App Title ==========
 st.title("🎥 :rainbow[Movie Explorer App]")
