@@ -69,15 +69,18 @@ def get_movies_by_category(category_key, api_key):
     return requests.get(url).json().get("results", [])
 
 # ========== Rating Options ==========
-rating_options = {"💔 Awful": 1, "🙁 Bad": 2, "😐 Okay": 3, "🙂 Good": 4, "😍 Loved It!": 5}
-def_index = 2
+rating_options = {
+    "⭐": 1,
+    "⭐⭐": 2,
+    "⭐⭐⭐": 3,
+    "⭐⭐⭐⭐": 4,
+    "⭐⭐⭐⭐⭐": 5
+}
+default_index = 2
 
-# ========== Input ==========
+# ========== Inputs ==========
 query = st.text_input("Enter a movie title:", "")
-
-# ========== Category Browse ==========
-st.markdown("## 🎯 Browse by Category")
-category = st.selectbox("Or select a category:", ["Popular", "Now Playing", "Upcoming", "Top Rated"])
+category = st.selectbox("🎯 Or select a category:", ["Popular", "Now Playing", "Upcoming", "Top Rated"])
 category_map = {
     "Popular": "popular",
     "Now Playing": "now_playing",
@@ -85,7 +88,7 @@ category_map = {
     "Top Rated": "top_rated"
 }
 
-# ========== Browse by Category ==========
+# ========== Movie Search and Display ==========
 if query.strip() == "":
     st.markdown(f"### 🎞 {category} Movies")
     movies = get_movies_by_category(category_map[category], API_KEY)
@@ -97,28 +100,21 @@ if query.strip() == "":
                 st.image(f"https://image.tmdb.org/t/p/w200{movie['poster_path']}", use_container_width=True)
             st.caption(movie.get("overview", "No overview available."))
 else:
-    # ========== Movie Search Handling ==========
-    if "search_done" not in st.session_state:
-        st.session_state.search_done = False
+    search_result = search_movie(query, API_KEY)
+    if "results" not in search_result or len(search_result["results"]) == 0:
+        st.error("❌ No movie found with that title.")
+    else:
+        movie_options = [
+            f"{m['title']} ({m.get('release_date', 'N/A')[:4]})"
+            for m in search_result["results"]
+        ]
+        selected_title = st.selectbox("Select a movie for more details:", movie_options)
 
-    if st.button("Search Movie"):
-        st.session_state.search_done = True
-        st.session_state.search_result = search_movie(query, API_KEY)
-
-    if st.session_state.get("search_done", False):
-        search_result = st.session_state.get("search_result", {})
-        if "results" not in search_result or len(search_result["results"]) == 0:
-            st.error("❌ No movie found with that title.")
-        else:
-            movie_options = [
-                f"{m['title']} ({m.get('release_date', 'N/A')[:4]})"
-                for m in search_result["results"]
-            ]
-            selected_title = st.selectbox("Select a movie for more details:", movie_options)
+        if selected_title:
             selected_index = movie_options.index(selected_title)
             movie = search_result["results"][selected_index]
-
             movie_id = movie["id"]
+
             details = get_movie_details(movie_id, API_KEY)
             credits = get_movie_credits(movie_id, API_KEY)
             trailer_url = get_movie_trailer(movie_id, API_KEY)
@@ -178,12 +174,13 @@ else:
             else:
                 st.info(f"Genre: {genres[0]}")
 
+            # Review Section
             st.markdown("---")
             st.subheader("📝 Your Review")
             with st.form("review_form"):
                 user_review = st.text_area("Write your review here (optional):", "")
                 rating_labels = list(rating_options.keys())
-                selected_label = st.radio("Rate this movie:", rating_labels, index=def_index, horizontal=True)
+                selected_label = st.radio("Rate this movie:", rating_labels, index=default_index, horizontal=True)
                 star_rating = rating_options.get(selected_label, 0)
                 submitted = st.form_submit_button("Submit Review")
                 if submitted:
