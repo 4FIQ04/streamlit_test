@@ -43,20 +43,6 @@ st.markdown(f"👋 Hello, *{user_name}*! Let's explore some movies.")
 # ========== TMDb API ==========
 API_KEY = "4f658b3a4df357c0e36dea39fe745497"  # Replace with your own TMDb API key
 
-# ========== Movie Search ==========
-query = st.text_input("Enter a movie title:", "")
-
-# ========== Category Dropdown ==========
-st.markdown("## 🎯 Browse by Category")
-
-category = st.selectbox("Or select a category:", ["Popular", "Now Playing", "Upcoming", "Top Rated"])
-category_map = {
-    "Popular": "popular",
-    "Now Playing": "now_playing",
-    "Upcoming": "upcoming",
-    "Top Rated": "top_rated"
-}
-
 # ========== TMDb API Functions ==========
 def search_movie(query, api_key):
     url = f"https://api.themoviedb.org/3/search/movie?api_key={api_key}&query={query}"
@@ -82,7 +68,24 @@ def get_movies_by_category(category_key, api_key):
     url = f"https://api.themoviedb.org/3/movie/{category_key}?api_key={api_key}&language=en-US&page=1"
     return requests.get(url).json().get("results", [])
 
-# ========== Handle Category Browse ==========
+# ========== Rating Options ==========
+rating_options = {"💔 Awful": 1, "🙁 Bad": 2, "😐 Okay": 3, "🙂 Good": 4, "😍 Loved It!": 5}
+def_index = 2
+
+# ========== Input ==========
+query = st.text_input("Enter a movie title:", "")
+
+# ========== Category Browse ==========
+st.markdown("## 🎯 Browse by Category")
+category = st.selectbox("Or select a category:", ["Popular", "Now Playing", "Upcoming", "Top Rated"])
+category_map = {
+    "Popular": "popular",
+    "Now Playing": "now_playing",
+    "Upcoming": "upcoming",
+    "Top Rated": "top_rated"
+}
+
+# ========== Browse by Category ==========
 if query.strip() == "":
     st.markdown(f"### 🎞 {category} Movies")
     movies = get_movies_by_category(category_map[category], API_KEY)
@@ -94,10 +97,16 @@ if query.strip() == "":
                 st.image(f"https://image.tmdb.org/t/p/w200{movie['poster_path']}", use_container_width=True)
             st.caption(movie.get("overview", "No overview available."))
 else:
-    # ========== Search Result ==========
-    if st.button("Search Movie"):
-        search_result = search_movie(query, API_KEY)
+    # ========== Movie Search Handling ==========
+    if "search_done" not in st.session_state:
+        st.session_state.search_done = False
 
+    if st.button("Search Movie"):
+        st.session_state.search_done = True
+        st.session_state.search_result = search_movie(query, API_KEY)
+
+    if st.session_state.get("search_done", False):
+        search_result = st.session_state.get("search_result", {})
         if "results" not in search_result or len(search_result["results"]) == 0:
             st.error("❌ No movie found with that title.")
         else:
@@ -106,11 +115,10 @@ else:
                 for m in search_result["results"]
             ]
             selected_title = st.selectbox("Select a movie for more details:", movie_options)
-
             selected_index = movie_options.index(selected_title)
             movie = search_result["results"][selected_index]
-            movie_id = movie["id"]
 
+            movie_id = movie["id"]
             details = get_movie_details(movie_id, API_KEY)
             credits = get_movie_credits(movie_id, API_KEY)
             trailer_url = get_movie_trailer(movie_id, API_KEY)
@@ -140,14 +148,13 @@ else:
                 "Title": m["title"],
                 "Year": m.get("release_date", "N/A")[:4] if m.get("release_date") else "N/A"
             } for m in search_result["results"] if m.get("release_date")])
-
             st.table(compare_df)
 
-            st.subheader("📊 Rating and Vote Count")
             vote_data = pd.DataFrame({
                 "Metric": ["Average Rating", "Vote Count"],
                 "Value": [details["vote_average"], details["vote_count"]]
             })
+            st.subheader("📊 Rating and Vote Count")
             st.altair_chart(
                 alt.Chart(vote_data).mark_bar().encode(
                     x="Metric",
@@ -173,19 +180,10 @@ else:
 
             st.markdown("---")
             st.subheader("📝 Your Review")
-            rating_options = {
-                "⭐": 1,
-                "⭐⭐": 2,
-                "⭐⭐⭐": 3,
-                "⭐⭐⭐⭐": 4,
-                "⭐⭐⭐⭐⭐": 5
-            }
-            default_index = 2
-
             with st.form("review_form"):
                 user_review = st.text_area("Write your review here (optional):", "")
                 rating_labels = list(rating_options.keys())
-                selected_label = st.radio("Rate this movie:", rating_labels, index=default_index, horizontal=True)
+                selected_label = st.radio("Rate this movie:", rating_labels, index=def_index, horizontal=True)
                 star_rating = rating_options.get(selected_label, 0)
                 submitted = st.form_submit_button("Submit Review")
                 if submitted:
@@ -196,5 +194,4 @@ else:
                         st.markdown(f"📝 Your Review: **{user_review}**")
                     else:
                         st.markdown("No written review provided.")
-
 
