@@ -127,7 +127,7 @@ else:
             credits = get_movie_credits(movie_id, API_KEY)
             trailer_url = get_movie_trailer(movie_id, API_KEY)
 
-            director = next((m["name"] for m in credits.get("crew", []) if m["job"] == "Director"), "Unknown")
+            director = next((m["name"] for m in credits.get("crew", []) if m["job"] == "Pengarah"), "Unknown")
             cast_list = credits.get("cast", [])
             top_cast = ", ".join([actor["name"] for actor in cast_list[:3]]) if cast_list else "N/A"
 
@@ -135,7 +135,7 @@ else:
             if details.get("poster_path"):
                 st.image(f"https://image.tmdb.org/t/p/w500{details['poster_path']}")
             st.markdown(f"*Storyline*: {details.get('overview', 'No overview available.')}")
-            st.markdown(f"*Director*: {director}")
+            st.markdown(f"*Pengarah*: {director}")
             st.markdown(f"*Stars*: {top_cast}")
             st.markdown(f"*Runtime*: {details.get('runtime', 'N/A')} mins")
             st.markdown(f"*Vote Average*: {details['vote_average']}")
